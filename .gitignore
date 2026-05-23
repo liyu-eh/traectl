@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env
+*.log
+/tmp/trae_solo_screenshot.png
+uv.lock
+watchdog_all_fixes.sh
+_submit_*.py
+
+# Project-specific
+splitflow_watchdog.py
+.hermes/
+agent/
