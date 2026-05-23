@@ -6,7 +6,7 @@
 </p>
 
 <h1 align="center">traectl</h1>
-<p align="center"><strong>通过 Chrome DevTools Protocol 控制 Trae CN SOLO 编码代理的命令行工具</strong></p>
+<p align="center"><strong>通过 CDP JavaScript 注入控制 Trae CN SOLO 编码代理的命令行工具</strong></p>
 
 <p align="center">
   AI Agent 原生设计 · JSON 输出 · 全命令自省 · 34 个操作命令
@@ -16,13 +16,42 @@
 
 ## 概述
 
-`traectl` 让你不用鼠标键盘，直接在终端里操控 [Trae CN](https://trae.cn) SOLO 编码代理。提交任务、切模型、查状态、看文件变更、执行终端命令——全部通过 CDP 协议自动化。
+`traectl` 让你不用鼠标键盘，直接在终端里操控 [Trae CN](https://trae.cn) SOLO 编码代理。
+
+**核心原理：** 通过 Chrome DevTools Protocol 连接 Trae CN 的调试端口，向浏览器上下文注入 JavaScript，直接调用 DOM API 操控 Trae CN 界面——**比模拟鼠标点击更可靠，能绕过 React 合成事件的拦截**。
 
 **适用场景：**
 - 🤖 服务器上无头运行 Trae CN
 - ⏰ 定时任务切换模型（白天 Kimi-K2.6，深夜 GLM-5.1）
 - 🔄 CI/CD 流水线中自动提交编码任务
 - 📊 批量监控多个工作区的 SOLO 状态
+
+---
+
+## 架构
+
+```
+┌─────────────────────────────────────────────────────┐
+│  CLI 层 (Typer)                                      │
+│  submit / switch / health / chat / exec / ...       │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+┌──────────────────────┴──────────────────────────────┐
+│  Controller 层 (7 Mixins)                            │
+│  TaskMixin / ChatMixin / ModelMixin / ...           │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+┌──────────────────────┴──────────────────────────────┐
+│  CDP 通信层 (WebSocket + JS 注入)                    │
+│  CDPClient.eval_js("document.querySelector()...")   │
+│  ← Runtime.evaluate → 直接在浏览器执行 JavaScript    │
+└──────────────────────┬──────────────────────────────┘
+                       ↓
+┌──────────────────────┴──────────────────────────────┐
+│  Trae CN (Electron)                                  │
+│  接收 JS 操控: 提交任务 / 切模型 / 改文件 / 执行命令  │
+└─────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -54,7 +83,6 @@ trae-cn --remote-debugging-port=9224
 
 ```bash
 ss -tlnp | grep 9224
-curl http://localhost:9224/json/version
 ```
 
 ---
@@ -68,7 +96,7 @@ traectl health --port 9224
 # 查看可用模型
 traectl models --port 9224
 
-# 切换模型
+# 切换模型（通过 JS 注入点击选择器，不用模拟鼠标）
 traectl switch Kimi-K2.6 --port 9224
 
 # 提交编码任务
@@ -136,7 +164,7 @@ traectl chat --port 9224
 | `roles` | 列出所有 Agent 角色 |
 | `analyze <task>` | 分析任务推荐最佳角色和模型 |
 | `close-dialog` | 关闭弹窗 |
-| `auto-recover` | 自动识别并处理弹窗 |
+| `auto-recover` | 智能识别并处理弹窗 |
 
 ### 📸 辅助
 
