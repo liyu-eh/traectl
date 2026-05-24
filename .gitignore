@@ -19,3 +19,6 @@ splitflow_watchdog.py
 agent/
 # Personal/private docs
 docs/架构文档_原版.docx
+
+# Internal dev notes (not for public repo)
+TODO.md
