@@ -22,7 +22,7 @@
 
 **适用场景：**
 - 🤖 服务器上无头运行 Trae CN
-- ⏰ 定时任务切换模型（白天 Kimi-K2.6，深夜 GLM-5.1）
+- ⏰ 定时任务切换模型（配合 cron 白天/夜间自动切）
 - 🔄 CI/CD 流水线中自动提交编码任务
 - 📊 批量监控多个工作区的 SOLO 状态
 
@@ -242,12 +242,14 @@ traectl chat --port 9224
 
 ### 定时切换模型
 
-```bash
-# 08:00 切换到 Kimi-K2.6（白天任务）
-0 8 * * * traectl switch kimi-k2.6 --port 9224
+通过系统 cron 定时切换模型，白天用高性能模型，夜间切经济模型：
 
-# 00:00 切换到 GLM-5.1（深夜省钱）
-0 0 * * * traectl switch glm-5.1 --port 9224
+```bash
+# 白天用 Kimi-K2.6
+0 9 * * * traectl switch kimi-k2.6 --port 9224
+
+# 夜间切经济模型
+0 1 * * * traectl switch glm-5.1 --port 9224
 ```
 
 ### 自动化任务提交流程

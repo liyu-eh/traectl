@@ -17,3 +17,5 @@ _submit_*.py
 splitflow_watchdog.py
 .hermes/
 agent/
+# Personal/private docs
+docs/架构文档_原版.docx
