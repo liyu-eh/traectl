@@ -102,61 +102,6 @@ def workspace_init(
     _display(mk_ok(data, type_="workspace.init"))
 
 
-@workspace_app.command(name="setup-mcp")
-def workspace_mcp(
-    action: str = typer.Argument("list", help="操作: list, add, update, remove"),
-    server_name: Optional[str] = typer.Option(None, "--name", help="MCP 服务器名称"),
-    command: Optional[str] = typer.Option(None, "--command", help="启动命令"),
-    args: Optional[str] = typer.Option(None, "--args", help="命令参数，逗号分隔"),
-    env: Optional[str] = typer.Option(None, "--env", help="环境变量 KEY=VALUE，逗号分隔"),
-    workspace_path: str = typer.Option(".", "--path", "-p", help="项目路径"),
-):
-    """管理 Trae CN MCP Server 配置。支持 add/list/update/remove 操作。"""
-    from ..workspace_manager import WorkspaceManager
-    wm = WorkspaceManager()
-
-    if action == "list":
-        result = wm.manage_mcp(workspace_path=os.path.abspath(workspace_path), action="list")
-        data = result.result or {}
-        if result.message:
-            data["message"] = result.message
-        _display(mk_ok(data, type_="workspace.mcp"))
-    elif action in ("add", "update"):
-        if not server_name or not command:
-            _print_json(mk_error("invalid_argument", f"{action} 操作需要 --name 和 --command", exit_code=EXIT_USAGE, hint=f"traectl workspace setup-mcp {action} --name <server> --command <cmd>"))
-            return
-        server_config = {"command": command}
-        if args:
-            server_config["args"] = [a.strip() for a in args.split(",")]
-        if env:
-            server_config["env"] = dict(e.split("=", 1) for e in env.split(",") if "=" in e)
-        result = wm.manage_mcp(
-            workspace_path=os.path.abspath(workspace_path),
-            action=action,
-            server_name=server_name,
-            server_config=server_config,
-        )
-        data = result.result or {}
-        if result.message:
-            data["message"] = result.message
-        _display(mk_ok(data, type_="workspace.mcp"))
-    elif action == "remove":
-        if not server_name:
-            _print_json(mk_error("invalid_argument", "remove 操作需要 --name", exit_code=EXIT_USAGE, hint="traectl workspace setup-mcp remove --name <server>"))
-            return
-        result = wm.manage_mcp(
-            workspace_path=os.path.abspath(workspace_path),
-            action="remove",
-            server_name=server_name,
-        )
-        data = result.result or {}
-        if result.message:
-            data["message"] = result.message
-        _display(mk_ok(data, type_="workspace.mcp"))
-    else:
-        _print_json(mk_error("invalid_argument", f"未知操作: {action}，支持: list, add, update, remove", exit_code=EXIT_USAGE, hint="traectl workspace setup-mcp list"))
-
-
 # ===================================================================
 # 子命令组：config
 # ===================================================================

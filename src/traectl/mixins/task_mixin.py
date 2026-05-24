@@ -109,21 +109,6 @@ class TaskMixin:
         except Exception as e:
             return StandardResponse(result=None, message=f"打开设置失败: {e}", code=-1)
 
-    async def open_mcp_settings(self) -> StandardResponse:
-        """打开 MCP 服务器配置（用户级 mcp.json）。"""
-        try:
-            await self._cdp.dispatch_key_combo(["Control", "Shift", "KeyP"])
-            await asyncio.sleep(1.5)
-            json_cmd = json.dumps(">MCP: Open Workspace Folder MCP Configuration")
-            js = type_command_palette(json_cmd)
-            await self._cdp.eval_js(js)
-            await asyncio.sleep(1)
-            await self._cdp.dispatch_key_combo(["Enter"])
-            await asyncio.sleep(1)
-            return StandardResponse(result=None, message="MCP 配置已打开", code=0)
-        except Exception as e:
-            return StandardResponse(result=None, message=f"打开 MCP 配置失败: {e}", code=-1)
-
     async def toggle_auto_mode(self, enable: bool = True) -> StandardResponse:
         """切换 SOLO 自动/手动模式。"""
         try:

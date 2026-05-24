@@ -26,7 +26,7 @@ import typer
 
 @app.command()
 def action(
-    action_type: str = typer.Argument(..., help="操作类型: get_tasks, switch_task, delete_task, stop, open_settings, open_mcp, toggle_auto, open_file, confirm"),
+    action_type: str = typer.Argument(..., help="操作类型: get_tasks, switch_task, delete_task, stop, open_settings, toggle_auto, open_file, confirm"),
     task_index: Optional[int] = typer.Option(None, "--task-index", "-i", help="switch_task 时目标索引"),
     file_path: Optional[str] = typer.Option(None, "--file-path", "-f", help="open_file 时文件路径"),
     enable_auto: bool = typer.Option(True, "--enable-auto/--disable-auto", help="toggle_auto 时是否启用"),
@@ -53,7 +53,6 @@ def action(
             "delete_task": solo.delete_current_task,
             "stop": solo.stop_generating,
             "open_settings": solo.open_settings,
-            "open_mcp": solo.open_mcp_settings,
             "confirm": solo.auto_confirm,
         }
         if action_type in action_map:
@@ -69,7 +68,7 @@ def action(
         elif action_type == "toggle_auto":
             result = (await solo.toggle_auto_mode(enable_auto)).result
         else:
-            return mk_error("invalid_argument", f"未知 action: {action_type}", exit_code=EXIT_USAGE, hint="有效的 action: get_tasks, switch_task, delete_task, stop, open_settings, open_mcp, toggle_auto, open_file, confirm")
+            return mk_error("invalid_argument", f"未知 action: {action_type}", exit_code=EXIT_USAGE, hint="有效的 action: get_tasks, switch_task, delete_task, stop, open_settings, toggle_auto, open_file, confirm")
         return mk_ok({"action": action_type, "result": result}, type_="action.exec")
     _run(_cmd, host, port, workspace)
 

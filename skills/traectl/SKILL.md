@@ -172,7 +172,6 @@ version: 4.1.0
 | 命令 | 何时用 | 用法 | 返回 |
 |:----|:------|:----|:-----|
 | `workspace init --path <dir>` | 新项目初始化 | `traectl workspace init --path ./my-proj` | 创建的项目结构 |
-| `workspace setup-mcp <name>` | 配置 MCP 服务 | `traectl workspace setup-mcp --command npx --args "-y,@mcp/fs,/tmp"` | 配置结果 |
 | `install-skills` | 安装 Agent skills | `traectl install-skills --target ./skills` | 安装结果 |
 | `config get <key>` | 读取配置 | `traectl config get cdp_port` | 配置值 |
 | `config set <key> <val>` | 设置配置 | `traectl config set solo_timeout 600` | 确认 |

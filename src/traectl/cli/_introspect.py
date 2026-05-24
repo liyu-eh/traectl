@@ -53,7 +53,7 @@ COMMAND_METADATA = {
 # Parameter validation rules
 PARAM_VALIDATION = {
     "action": {
-        "action_type": {"allowed": ["get_tasks", "switch_task", "delete_task", "stop", "open_settings", "open_mcp", "toggle_auto", "open_file", "confirm"], "description": "操作类型"},
+        "action_type": {"allowed": ["get_tasks", "switch_task", "delete_task", "stop", "open_settings", "toggle_auto", "open_file", "confirm"], "description": "操作类型"},
     },
     "switch": {
         "model_name": {"description": "模型名称", "example": "DeepSeek-V4-Pro"},

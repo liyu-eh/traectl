@@ -181,7 +181,6 @@ traectl chat --port 9224
 | 命令 | 说明 |
 |:----|:------|
 | `workspace init --path <dir>` | 初始化项目工作区 |
-| `workspace setup-mcp <name>` | 配置 MCP 服务器 |
 | `install-skills` | 安装 Agent skills |
 | `config get/set/list/export` | 配置管理 |
 

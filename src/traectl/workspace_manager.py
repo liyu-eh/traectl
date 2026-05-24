@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""项目工作区自动配置管理：技能推荐、MCP Server 配置、项目类型检测。"""
+"""项目工作区自动配置管理：技能推荐、项目类型检测。"""
 
 import json
 import logging
@@ -25,7 +25,6 @@ class WorkspaceManager:
     """管理项目工作区配置。"""
 
     TRAE_CONFIG_PATH = Path.home() / ".config" / "Trae CN" / "User" / "traectl.yaml"
-    TRAE_MCP_GLOBAL_PATH = Path.home() / ".config" / "Trae CN" / "User" / "mcp.json"
     SKILLS_DIR = Path.home() / ".hermes" / "skills"
 
     PROJECT_TYPE_SKILLS: dict[str, list[str]] = {
@@ -70,9 +69,8 @@ class WorkspaceManager:
         (["Unity", "Assets", "Packages/manifest.json"], "game"),
     ]
 
-    def __init__(self, config_path: Optional[Path] = None, mcp_path: Optional[Path] = None):
+    def __init__(self, config_path: Optional[Path] = None):
         self._config_path = config_path or self.TRAE_CONFIG_PATH
-        self._mcp_path = mcp_path
         self._config_cache: Optional[dict] = None
 
     def _load_config(self) -> dict:
@@ -207,56 +205,11 @@ class WorkspaceManager:
     def _get_recommended_skills(self, project_type: str) -> list[str]:
         return self.PROJECT_TYPE_SKILLS.get(project_type, self.PROJECT_TYPE_SKILLS["default"])
 
-    def _trae_mcp_path(self, workspace_path: str) -> Path:
-        if self._mcp_path:
-            return self._mcp_path
-        # 默认使用工作区级别的 .trae/mcp.json
-        return Path(workspace_path) / ".trae" / "mcp.json"
-
-    def _load_mcp_json(self, workspace_path: str) -> dict:
-        path = self._trae_mcp_path(workspace_path)
-        if not path.exists():
-            return {"servers": {}}
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {"servers": {}}
-
-    def _save_mcp_json(self, workspace_path: str, data: dict) -> None:
-        path = self._trae_mcp_path(workspace_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-            f.write("\n")
-
-    def _get_mcp_servers(self, workspace_path: str) -> dict[str, dict]:
-        data = self._load_mcp_json(workspace_path)
-        return data.get("servers", {}) or {}
-
-    def _set_mcp_server(self, workspace_path: str, name: str, server_config: dict) -> None:
-        data = self._load_mcp_json(workspace_path)
-        servers = data.get("servers", {}) or {}
-        servers[name] = server_config
-        data["servers"] = servers
-        self._save_mcp_json(workspace_path, data)
-
-    def _delete_mcp_server(self, workspace_path: str, name: str) -> bool:
-        data = self._load_mcp_json(workspace_path)
-        servers = data.get("servers", {}) or {}
-        if name in servers:
-            del servers[name]
-            data["servers"] = servers
-            self._save_mcp_json(workspace_path, data)
-            return True
-        return False
-
     def setup_workspace(
         self,
         workspace_path: str,
         project_type: Optional[str] = None,
         skills: Optional[list[str]] = None,
-        mcp_servers: Optional[dict[str, dict]] = None,
     ) -> StandardResponse:
         """初始化项目工作区配置。返回 StandardResponse。"""
         self._invalidate_cache()
@@ -283,14 +236,6 @@ class WorkspaceManager:
         }
         self._save_yaml(trae_config_path, trae_config)
 
-        added_mcp = []
-        if mcp_servers:
-            for name, cfg in mcp_servers.items():
-                self._set_mcp_server(workspace_path, name, cfg)
-                added_mcp.append(name)
-
-        configured_mcp = list(self._get_mcp_servers(workspace_path).keys())
-
         result = {
             "workspace_path": workspace_path,
             "detected_project_type": detected_type,
@@ -298,8 +243,6 @@ class WorkspaceManager:
             "recommended_skills": recommended,
             "added_skills": list(dict.fromkeys(skills or [])),
             "configured_skills": unique_skills,
-            "added_mcp_servers": added_mcp,
-            "configured_mcp_servers": configured_mcp,
             "config_path": str(trae_config_path),
         }
         return _sr(result=result, message=f"工作区配置完成: {actual_type}")
@@ -367,60 +310,3 @@ class WorkspaceManager:
             return _sr(result={"action": "recommend", "project_type": ptype, "workspace_path": cwd, "recommended_skills": self._get_recommended_skills(ptype)}, message=f"推荐技能: {ptype}")
 
         return _sr(result=None, message=f"未知的 action: {action}。支持: list, add, remove, search, recommend", code=-1)
-
-    def manage_mcp(
-        self,
-        workspace_path: str,
-        action: str,
-        server_name: Optional[str] = None,
-        server_config: Optional[dict] = None,
-    ) -> StandardResponse:
-        """管理 MCP Server 配置。返回 StandardResponse。"""
-        if action == "list":
-            servers = self._get_mcp_servers(workspace_path)
-            result = {
-                "action": "list",
-                "workspace_path": workspace_path,
-                "mcp_servers": [
-                    {"name": name, "command": cfg.get("command", ""), "args": cfg.get("args", [])}
-                    for name, cfg in servers.items()
-                ],
-                "total": len(servers),
-            }
-            return _sr(result=result, message=f"MCP 列表: {len(servers)} 个服务器")
-
-        elif action == "add":
-            if not server_name or not server_config:
-                return _sr(result=None, message="添加 MCP server 需要提供 server_name 和 server_config", code=-1)
-            existing = self._get_mcp_servers(workspace_path)
-            self._set_mcp_server(workspace_path, server_name, server_config)
-            status = "updated" if server_name in existing else "added"
-            return _sr(
-                result={"action": "add", "server_name": server_name, "workspace_path": workspace_path, "status": status, "config": server_config},
-                message=f"MCP server '{server_name}' 已{'更新' if status == 'updated' else '添加'}",
-            )
-
-        elif action == "update":
-            if not server_name or not server_config:
-                return _sr(result=None, message="更新 MCP server 需要提供 server_name 和 server_config", code=-1)
-            existing = self._get_mcp_servers(workspace_path)
-            if server_name not in existing:
-                return _sr(result=None, message=f"MCP server '{server_name}' 不存在，请先添加", code=-1)
-            merged = {**existing[server_name], **server_config}
-            self._set_mcp_server(workspace_path, server_name, merged)
-            return _sr(
-                result={"action": "update", "server_name": server_name, "workspace_path": workspace_path, "status": "updated", "config": merged},
-                message=f"MCP server '{server_name}' 已更新",
-            )
-
-        elif action == "remove":
-            if not server_name:
-                return _sr(result=None, message="删除 MCP server 需要提供 server_name", code=-1)
-            removed = self._delete_mcp_server(workspace_path, server_name)
-            status = "removed" if removed else "not_found"
-            return _sr(
-                result={"action": "remove", "server_name": server_name, "workspace_path": workspace_path, "status": status},
-                message=f"MCP server '{server_name}': {status}",
-            )
-
-        return _sr(result=None, message=f"未知的 action: {action}。支持: list, add, update, remove", code=-1)
