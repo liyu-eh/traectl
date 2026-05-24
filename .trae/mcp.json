@@ -8,7 +8,7 @@
     "filesystem": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/ubuntu"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/workspace"]
     }
   }
 }

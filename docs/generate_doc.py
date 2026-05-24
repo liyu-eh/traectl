@@ -6,6 +6,7 @@ from docx.shared import Inches, Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
+import os
 
 doc = Document()
 
@@ -516,8 +517,7 @@ add_table(
 )
 
 # ── 保存 ──────────────────────────────────────────────────────────
-output_path = "/home/ubuntu/traectl-CLI/docs/traectl-架构文档.docx"
+output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "traectl-架构文档.docx")
 doc.save(output_path)
-import os
 size = os.path.getsize(output_path)
 print(f"✅ 文档已保存: {output_path} ({size} bytes)")
