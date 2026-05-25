@@ -23,5 +23,26 @@ jobs:
           pip install --upgrade pip
           pip install -e .
           pip install pytest
-      - name: Run tests
-        run: python -m pytest -v
+      - name: Run unit tests (skip integration — needs Trae CN)
+        run: python -m pytest tests/ -m "not integration" -v
+      - name: Smoke test — CLI help
+        run: traectl --help
+      - name: Smoke test — doctor
+        run: |
+          traectl doctor | python3 -c '
+          import sys, json
+          d = json.load(sys.stdin)
+          assert d["ok"] is True, f"doctor failed: {d}"
+          required = ("system", "release", "python_version", "config_dir", "temp_dir", "cdp_port")
+          for k in required:
+              assert k in d["data"], f"missing field: {k}"
+          print(f"OK: doctor has {len(d[\"data\"])} fields")
+          '
+      - name: Smoke test — version
+        run: |
+          traectl version | python3 -c '
+          import sys, json
+          d = json.load(sys.stdin)
+          assert d["ok"] is True
+          print(f"OK: traectl {d[\"data\"]}")
+          '

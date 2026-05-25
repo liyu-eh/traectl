@@ -11,7 +11,7 @@
 import os
 import json as _json
 from dataclasses import dataclass
-from pathlib import Path
+from . import platform as _platform
 
 
 def _env_with_fallback(new_key: str, old_key: str, default: str) -> str:
@@ -31,9 +31,9 @@ MAX_RETRY_INTERVAL = int(_env_with_fallback("TRAECTL_CDP_MAX_RETRY_INTERVAL", "C
 INITIAL_RETRY_INTERVAL = int(_env_with_fallback("TRAECTL_CDP_INITIAL_RETRY_INTERVAL", "CDP_INITIAL_RETRY_INTERVAL", "1"))
 MAX_RETRIES = int(_env_with_fallback("TRAECTL_CDP_MAX_RETRIES", "CDP_MAX_RETRIES", "5"))
 
-# ── XDG 配置目录 ──────────────────────────────────────────────
-CONFIG_DIR = Path(os.environ.get("TRAECTL_CONFIG_DIR", os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")))
-CONFIG_FILE = CONFIG_DIR / "traectl" / "config.json"
+# ── 平台兼容配置目录 ──────────────────────────────────────────
+CONFIG_DIR = _platform.get_config_dir()
+CONFIG_FILE = CONFIG_DIR / "config.json"
 
 # ── Schema 版本 ───────────────────────────────────────────────
 SCHEMA_VERSION = 1
