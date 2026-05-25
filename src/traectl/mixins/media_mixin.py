@@ -6,9 +6,10 @@ import base64
 import json
 import logging
 import re
-from datetime import datetime
+
 
 from ..config import SELECTORS, CONSTANTS
+from ..platform import get_screenshot_path
 from ..response import StandardResponse
 from ..js_templates import (
     click_retry_btn,
@@ -38,8 +39,7 @@ class MediaMixin:
         try:
             data = await self._cdp.capture_screenshot()
             if output_path is None:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_path = f"/tmp/trae_screenshot_{timestamp}.png"
+                output_path = str(get_screenshot_path())
             with open(output_path, "wb") as f:
                 f.write(base64.b64decode(data))
             logger.info(f"截图已保存: {output_path}")

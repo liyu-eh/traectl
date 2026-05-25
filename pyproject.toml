@@ -32,3 +32,9 @@ traectl = "traectl.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: 需要真实 Trae CN 实例的端到端测试",
+    "install_test: 从 pip 安装到 CLI 使用的完整端到端测试（慢，需手动指定）",
+]

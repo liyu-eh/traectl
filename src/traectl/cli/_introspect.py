@@ -12,6 +12,8 @@ from typing import Optional
 
 import typer
 
+from ..platform import get_platform_info
+
 # Command metadata: risk level, confirmation requirements, hints
 COMMAND_METADATA = {
     "submit": {"risk": "low", "confirmation_required": False, "hint": "traectl submit <task_file>", "category": "task"},
@@ -48,6 +50,7 @@ COMMAND_METADATA = {
     "exit-codes": {"risk": "low", "confirmation_required": False, "hint": "traectl exit-codes", "category": "introspect"},
     "version": {"risk": "low", "confirmation_required": False, "hint": "traectl version", "category": "introspect"},
     "categories": {"risk": "low", "confirmation_required": False, "hint": "traectl categories", "category": "introspect"},
+    "doctor": {"risk": "low", "confirmation_required": False, "hint": "traectl doctor", "category": "introspect"},
 }
 
 # Parameter validation rules
@@ -335,3 +338,10 @@ def categories_cmd():
                 "commands": cmds,
             })
     _display(mk_ok({"categories": categories}, type_="categories.list"))
+
+
+@app.command(name="doctor")
+def doctor_cmd():
+    """输出平台诊断信息（系统、Python、temp_dir、config_dir、CDP 配置等）。"""
+    info = get_platform_info()
+    _display(mk_ok(info, type_="doctor.info"))

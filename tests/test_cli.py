@@ -108,31 +108,17 @@ def _get_command_name(cmd):
 class TestTyperCommandsImport:
     """测试命令可通过 typer 导入"""
 
-    def test_app_has_registered_commands(self):
-        assert len(app.registered_commands) > 0
+    @pytest.mark.parametrize("cmd_name", [
+        "submit", "status", "models", "chat", "health", "version", "roles", "action",
+    ])
+    def test_app_has_registered_commands(self, cmd_name):
         command_names = [_get_command_name(cmd) for cmd in app.registered_commands]
-        assert "submit" in command_names
-        assert "status" in command_names
-        assert "models" in command_names
-        assert "chat" in command_names
-        assert "health" in command_names
+        assert cmd_name in command_names
 
     def test_app_has_registered_groups(self):
         group_names = [g.name for g in app.registered_groups]
         assert "workspace" in group_names
         assert "config" in group_names
-
-    def test_version_command_exists(self):
-        command_names = [_get_command_name(cmd) for cmd in app.registered_commands]
-        assert "version" in command_names
-
-    def test_roles_command_exists(self):
-        command_names = [_get_command_name(cmd) for cmd in app.registered_commands]
-        assert "roles" in command_names
-
-    def test_action_command_exists(self):
-        command_names = [_get_command_name(cmd) for cmd in app.registered_commands]
-        assert "action" in command_names
 
 
 class TestResponseHelpers:

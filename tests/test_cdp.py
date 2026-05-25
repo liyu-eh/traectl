@@ -158,3 +158,94 @@ class TestCDPConnectionState:
         assert cdp_client._ws is None
         assert cdp_client.state == ConnectionState.DISCONNECTED
         assert ws.closed is True
+
+
+# ══════════════════════════════════════════════════════════
+# ensure_connected 重连逻辑
+# ══════════════════════════════════════════════════════════
+
+class TestEnsureConnected:
+    """验证 CDP 自动重连逻辑的完整状态机。"""
+
+    @pytest.mark.asyncio
+    async def test_alive_connected_noop(self, cdp_client):
+        """已连接且 alive → 不做任何事。"""
+        ws = AsyncMock()
+        ws.ping = AsyncMock(return_value=True)
+        ws.close = AsyncMock()
+        cdp_client._ws = ws
+        cdp_client._state = ConnectionState.CONNECTED
+
+        with patch.object(cdp_client, 'connect', new=AsyncMock()) as mock_connect:
+            await cdp_client.ensure_connected()
+
+        mock_connect.assert_not_called()
+        ws.ping.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_connected_but_ping_fails_reconnects(self, cdp_client):
+        """已连接但 ping 失败 → 重连。"""
+        old_ws = AsyncMock()
+        old_ws.ping = AsyncMock(side_effect=Exception("ping fail"))
+        old_ws.close = AsyncMock()
+        cdp_client._ws = old_ws
+        cdp_client._state = ConnectionState.CONNECTED
+
+        with patch.object(cdp_client, 'connect', new=AsyncMock()) as mock_connect, \
+             patch.object(cdp_client, 'disconnect', new=AsyncMock()) as mock_disconnect:
+            await cdp_client.ensure_connected()
+
+        mock_disconnect.assert_awaited_once()
+        mock_connect.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_disconnected_reconnects(self, cdp_client):
+        """断连状态 → 重连。"""
+        cdp_client._ws = None
+        cdp_client._state = ConnectionState.DISCONNECTED
+
+        with patch.object(cdp_client, 'connect', new=AsyncMock()) as mock_connect, \
+             patch.object(cdp_client, 'disconnect', new=AsyncMock()) as mock_disconnect:
+            await cdp_client.ensure_connected()
+
+        mock_disconnect.assert_awaited_once()
+        mock_connect.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_connecting_waits_then_returns(self, cdp_client):
+        """正在连接中 → 等待直到连接完成。"""
+        cdp_client._ws = None
+        cdp_client._state = ConnectionState.CONNECTING
+
+        # 模拟另一个协程在 0.3s 后将状态切换为 CONNECTED
+        async def _set_connected():
+            await asyncio.sleep(0.3)
+            cdp_client._state = ConnectionState.CONNECTED
+
+        async with asyncio.TaskGroup() as tg:
+            tg.create_task(_set_connected())
+            tg.create_task(cdp_client.ensure_connected())
+
+        assert cdp_client._state == ConnectionState.CONNECTED
+
+    @pytest.mark.asyncio
+    async def test_connecting_timeout_raises(self, cdp_client):
+        """连接中超时 → 抛出 RuntimeError。"""
+        cdp_client._ws = None
+        cdp_client._state = ConnectionState.CONNECTING
+
+        with pytest.raises(RuntimeError, match="CDP 连接超时"):
+            await cdp_client.ensure_connected()
+
+    @pytest.mark.asyncio
+    async def test_no_ws_but_connected_state_reconnects(self, cdp_client):
+        """state=CONNECTED 但 ws=None → ping 失败 → 重连。"""
+        cdp_client._ws = None
+        cdp_client._state = ConnectionState.CONNECTED
+
+        with patch.object(cdp_client, 'connect', new=AsyncMock()) as mock_connect, \
+             patch.object(cdp_client, 'disconnect', new=AsyncMock()) as mock_disconnect:
+            await cdp_client.ensure_connected()
+
+        mock_disconnect.assert_awaited_once()
+        mock_connect.assert_awaited_once()
